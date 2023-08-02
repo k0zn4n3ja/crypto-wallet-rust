@@ -210,7 +210,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "crypto-wallet"
+name = "cryptowallet"
 version = "0.1.0"
 dependencies = [
  "anyhow",
