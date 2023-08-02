@@ -10,7 +10,7 @@ async fn main() -> Result<()> {
     println!("Hello, world!");
     let (private, public) = generate_keypair();
     println!("private and public keys");
-    println!("{}", private);
+    println!("{}", private.display_secret().to_string());
     println!("{}", public);
 
     let address = address_from_pubkey(&public);

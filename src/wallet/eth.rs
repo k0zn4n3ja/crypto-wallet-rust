@@ -1,8 +1,7 @@
-use super::utils::random_seed;
 use anyhow::{bail, Result};
 use secp256k1::{
-    rand::{rngs, SeedableRng},
-    PublicKey, SecretKey,
+    rand::rngs::OsRng,
+    {Message, PublicKey, Secp256k1, SecretKey},
 };
 use serde::{Deserialize, Serialize};
 use std::io::BufWriter;
@@ -26,7 +25,7 @@ impl Wallet {
     pub fn new(secret_key: &SecretKey, public_key: &PublicKey) -> Self {
         let addr: Address = address_from_pubkey(&public_key);
         Wallet {
-            secret_key: secret_key.to_string(),
+            secret_key: secret_key.display_secret().to_string(),
             public_key: public_key.to_string(),
             address: format!("{:?}", addr),
         }
@@ -65,11 +64,11 @@ impl Wallet {
     }
 }
 
+/// Generates a keypair using OS Rng.
+/// For all major platforms, OS Rng is a CSPRNG with physical entropy as seed.
 pub fn generate_keypair() -> (SecretKey, PublicKey) {
-    let secp = secp256k1::Secp256k1::new();
-    // get random number for keypair from seed
-    let mut rng = rngs::StdRng::seed_from_u64(random_seed());
-    secp.generate_keypair(&mut rng)
+    let secp = Secp256k1::new();
+    secp.generate_keypair(&mut OsRng)
 }
 
 pub fn address_from_pubkey(pub_key: &PublicKey) -> Address {
