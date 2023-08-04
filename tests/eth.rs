@@ -8,10 +8,11 @@ mod tests {
         assert_eq!(secret_key.secret_bytes().len(), 32);
     }
 
-    // #[test]
-    // fn exploration() {
-    //     assert_eq!(2 + 2, 4);
-    // }
+    #[test]
+    fn key_hex_length() {
+        let (secret_key, pub_key) = generate_keypair();
+        assert_eq!(secret_key.display_secret().to_string().len(), 64);
+    }
 
     // #[test]
     // fn another() {
