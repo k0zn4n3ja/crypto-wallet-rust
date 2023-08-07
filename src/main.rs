@@ -19,12 +19,6 @@ async fn main() -> Result<()> {
     println!("address: ");
     println!("{:?}", address);
 
-    println!("some oehter bullshit");
-    let secret_key2: SecretKey =
-        SecretKey::from_slice(&[0xcd; 32]).expect("32 bytes, within curve order");
-
-    println!("{}", secret_key2.display_secret());
-
     let crypto_wallet = Wallet::new(&private, &public);
     println!("crypto_wallet: {:?}", &crypto_wallet);
 
