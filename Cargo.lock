@@ -202,6 +202,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "dotenv",
+ "hex",
  "rand",
  "rand_chacha",
  "secp256k1",

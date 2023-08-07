@@ -1,4 +1,5 @@
 use anyhow::{bail, Result};
+use hex::encode;
 use secp256k1::{
     rand::rngs::OsRng,
     {Message, PublicKey, Secp256k1, SecretKey},
@@ -19,6 +20,7 @@ pub struct Wallet {
     pub secret_key: String,
     pub public_key: String,
     pub address: String,
+    pub address_checksummed: String,
 }
 
 impl Wallet {
@@ -28,6 +30,7 @@ impl Wallet {
             secret_key: secret_key.display_secret().to_string(),
             public_key: public_key.to_string(),
             address: format!("{:?}", addr),
+            address_checksummed: to_checksum_address(&addr),
         }
     }
 
@@ -100,4 +103,27 @@ pub async fn sign_and_send(
         .send_raw_transaction(signed.raw_transaction)
         .await?;
     Ok(transaction_result)
+}
+
+pub fn to_checksum_address(address: &Address) -> String {
+    let addr = address.clone();
+
+    let address_lower: String = format!("{:?}", addr);
+    let chars: Vec<char> = address_lower.chars().collect();
+    let address_lower_hex: String = chars[2..].into_iter().collect();
+    let addr_hash = encode(keccak256(address_lower_hex.as_bytes()));
+
+    format!(
+        "0x{}",
+        address_lower_hex
+            .char_indices()
+            .map(
+                |(index, character)| match (character, addr_hash.chars().nth(index).unwrap()) {
+                    (c, h) if h > '7' => c.to_uppercase().to_string(),
+                    (c, _) => c.to_string(),
+                },
+            )
+            .collect::<Vec<String>>()
+            .join("")
+    )
 }

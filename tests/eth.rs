@@ -2,7 +2,7 @@
 mod tests {
     use std::u64;
 
-    use cryptowallet::wallet::eth::{address_from_pubkey, generate_keypair};
+    use cryptowallet::wallet::eth::{address_from_pubkey, generate_keypair, Wallet};
     use rand::RngCore;
     use secp256k1::rand::{Rng, SeedableRng};
     use secp256k1::{PublicKey, Secp256k1, SecretKey};
@@ -28,9 +28,8 @@ mod tests {
     #[test]
     fn pub_key_to_address_correct_hash() {
         let secp = Secp256k1::new();
+        // we use a non-random secret key for testing purposes
         let secret_key = SecretKey::from_slice(&[0xcd; 32]).expect("32 bytes, within curve order");
-
-        println!("{}", secret_key.display_secret().to_string());
 
         let public_key = PublicKey::from_secret_key(&secp, &secret_key);
         let address = address_from_pubkey(&public_key);
@@ -44,8 +43,21 @@ mod tests {
     }
 
     // think about what other props the address with have
+    #[test]
     fn address_is_checksumed() {
-        panic!("unimplemented feature");
+        let secp = Secp256k1::new();
+        // we use a non-random secret key for testing purposes
+        let secret_key = SecretKey::from_slice(&[0xcd; 32]).expect("32 bytes, within curve order");
+
+        let public_key = PublicKey::from_secret_key(&secp, &secret_key);
+        let wallet = Wallet::new(&secret_key, &public_key);
+
+        println!("{}", wallet.address_checksummed);
+
+        assert_eq!(
+            "0x89AEF553A06ab0C3173e79DE1Ce241A9ed3b992C",
+            &wallet.address_checksummed
+        )
     }
 
     // we need to check what properties there are and then test for them

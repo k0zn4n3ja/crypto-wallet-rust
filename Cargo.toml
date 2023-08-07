@@ -17,3 +17,4 @@ serde_json = "1.0"
 tiny-keccak = { version = "1.4" }
 rand = { version = "0.8.5", features = ["getrandom"] }
 rand_chacha = "0.3.1"
+hex = "0.4.3"
