@@ -1,3 +1,7 @@
+use rand::prelude::*;
+use rand::rngs::adapter::ReseedingRng;
+use rand::rngs::OsRng;
+use rand_chacha::ChaCha20Core;
 use web3::types::U256;
 
 pub fn wei_to_eth(wei_val: U256) -> f64 {

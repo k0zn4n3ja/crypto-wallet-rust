@@ -1,8 +1,8 @@
 use anyhow::{bail, Result};
-use rand::{thread_rng, Rng};
+use hex::encode;
 use secp256k1::{
-    rand::{rngs, SeedableRng},
-    PublicKey, SecretKey,
+    rand::rngs::OsRng,
+    {Message, PublicKey, Secp256k1, SecretKey},
 };
 use serde::{Deserialize, Serialize};
 use std::io::BufWriter;
@@ -20,15 +20,17 @@ pub struct Wallet {
     pub secret_key: String,
     pub public_key: String,
     pub address: String,
+    pub address_checksummed: String,
 }
 
 impl Wallet {
     pub fn new(secret_key: &SecretKey, public_key: &PublicKey) -> Self {
         let addr: Address = address_from_pubkey(&public_key);
         Wallet {
-            secret_key: secret_key.to_string(),
+            secret_key: secret_key.display_secret().to_string(),
             public_key: public_key.to_string(),
             address: format!("{:?}", addr),
+            address_checksummed: to_checksum_address(&addr),
         }
     }
 
@@ -65,15 +67,11 @@ impl Wallet {
     }
 }
 
+/// Generates a keypair using OS Rng.
+/// For all major platforms, OS Rng is a CSPRNG with physical entropy as seed.
 pub fn generate_keypair() -> (SecretKey, PublicKey) {
-    let secp = secp256k1::Secp256k1::new();
-    // setup generator for random seed
-    let mut rng = thread_rng();
-    // Generate a random u64 seed
-    let random_seed: u64 = rng.gen();
-    // get random number for keypair from seed
-    let mut rng = rngs::StdRng::seed_from_u64(random_seed);
-    secp.generate_keypair(&mut rng)
+    let secp = Secp256k1::new();
+    secp.generate_keypair(&mut OsRng)
 }
 
 pub fn address_from_pubkey(pub_key: &PublicKey) -> Address {
@@ -105,4 +103,27 @@ pub async fn sign_and_send(
         .send_raw_transaction(signed.raw_transaction)
         .await?;
     Ok(transaction_result)
+}
+
+pub fn to_checksum_address(address: &Address) -> String {
+    let addr = address.clone();
+
+    let address_lower: String = format!("{:?}", addr);
+    let chars: Vec<char> = address_lower.chars().collect();
+    let address_lower_hex: String = chars[2..].into_iter().collect();
+    let addr_hash = encode(keccak256(address_lower_hex.as_bytes()));
+
+    format!(
+        "0x{}",
+        address_lower_hex
+            .char_indices()
+            .map(
+                |(index, character)| match (character, addr_hash.chars().nth(index).unwrap()) {
+                    (c, h) if h > '7' => c.to_uppercase().to_string(),
+                    (c, _) => c.to_string(),
+                },
+            )
+            .collect::<Vec<String>>()
+            .join("")
+    )
 }

@@ -2,6 +2,7 @@ mod wallet;
 use std::env;
 
 use anyhow::Result;
+use secp256k1::SecretKey;
 use wallet::eth::{address_from_pubkey, establish_web3_connection, generate_keypair, Wallet};
 
 #[tokio::main]
@@ -10,7 +11,7 @@ async fn main() -> Result<()> {
     println!("Hello, world!");
     let (private, public) = generate_keypair();
     println!("private and public keys");
-    println!("{}", private);
+    println!("{}", private.display_secret().to_string());
     println!("{}", public);
 
     let address = address_from_pubkey(&public);
