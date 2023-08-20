@@ -1,13 +1,14 @@
 use anyhow::{bail, Result};
+
 use hex::encode;
 use secp256k1::{
     rand::rngs::OsRng,
-    {Message, PublicKey, Secp256k1, SecretKey},
+    Secp256k1, {PublicKey, SecretKey},
 };
 use serde::{Deserialize, Serialize};
-use std::io::BufWriter;
-use std::str::FromStr;
+use std::{collections::HashMap, io::BufWriter};
 use std::{fs::OpenOptions, io::BufReader};
+use std::{hash::Hash, str::FromStr};
 use tiny_keccak::keccak256;
 use web3::{
     transports::{self, WebSocket},
@@ -15,12 +16,33 @@ use web3::{
     Web3,
 };
 
+use super::hd::CoinType;
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Bip44Account {
+    pub index: u32,
+    pub changes: Vec<Bip44Change>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Bip44Change {
+    pub index: u32,
+    pub addresses: Vec<Bip44Address>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Bip44Address {
+    pub index: u32,
+    pub path: String,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Wallet {
     pub secret_key: String,
     pub public_key: String,
     pub address: String,
     pub address_checksummed: String,
+    pub accounts: HashMap<CoinType, Bip44Account>,
 }
 
 impl Wallet {
@@ -31,6 +53,7 @@ impl Wallet {
             public_key: public_key.to_string(),
             address: format!("{:?}", addr),
             address_checksummed: to_checksum_address(&addr),
+            accounts: HashMap::new(),
         }
     }
 

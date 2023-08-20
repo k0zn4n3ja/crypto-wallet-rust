@@ -18,3 +18,5 @@ tiny-keccak = { version = "1.4" }
 rand = { version = "0.8.5", features = ["getrandom"] }
 rand_chacha = "0.3.1"
 hex = "0.4.3"
+tiny-hderive = "0.3.0"
+bip39 = "2.0.0"
