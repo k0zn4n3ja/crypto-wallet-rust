@@ -3,7 +3,7 @@ use std::env;
 
 use anyhow::Result;
 use secp256k1::SecretKey;
-use wallet::eth::{address_from_pubkey, establish_web3_connection, generate_keypair, Wallet};
+use wallet::evm::{address_from_pubkey, establish_web3_connection, generate_keypair, Wallet};
 
 #[tokio::main]
 async fn main() -> Result<()> {
