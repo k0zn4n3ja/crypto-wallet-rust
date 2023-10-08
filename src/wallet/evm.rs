@@ -1,12 +1,13 @@
 use anyhow::{bail, Result};
+
 use hex::encode;
 use secp256k1::{
     rand::rngs::OsRng,
-    {Message, PublicKey, Secp256k1, SecretKey},
+    Secp256k1, {PublicKey, SecretKey},
 };
 use serde::{Deserialize, Serialize};
-use std::io::BufWriter;
 use std::str::FromStr;
+use std::{collections::HashMap, io::BufWriter};
 use std::{fs::OpenOptions, io::BufReader};
 use tiny_keccak::keccak256;
 use web3::{
@@ -15,12 +16,42 @@ use web3::{
     Web3,
 };
 
+use super::hd::CoinType;
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Bip44Account {
+    pub next_index: u32,
+    pub changes: HashMap<u32, Bip44Change>,
+}
+
+// 0 for receiving address, 1 for internal address. all will be recieivng for now.
+#[derive(Serialize, Deserialize, Debug)]
+pub enum Bip44ChangeVal {
+    RECEIVING,
+    INTERNAL,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Bip44Change {
+    pub change: Bip44ChangeVal,
+    pub next_address_index: u32,
+    pub addresses: HashMap<u32, Bip44Address>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Bip44Address {
+    pub path: String,
+    pub address: String,
+    pub address_checksummed: String,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Wallet {
     pub secret_key: String,
     pub public_key: String,
     pub address: String,
     pub address_checksummed: String,
+    pub accounts: HashMap<CoinType, Bip44Account>,
 }
 
 impl Wallet {
@@ -31,10 +62,12 @@ impl Wallet {
             public_key: public_key.to_string(),
             address: format!("{:?}", addr),
             address_checksummed: to_checksum_address(&addr),
+            accounts: HashMap::new(),
         }
     }
 
     pub fn save_to_file(&self, file_path: &str) -> Result<()> {
+        // TODO password encryption
         let file = OpenOptions::new()
             .write(true)
             .create(true)
@@ -45,6 +78,7 @@ impl Wallet {
     }
 
     pub fn from_file(file_path: &str) -> Result<Wallet> {
+        // TODO password encryption
         let file = OpenOptions::new().read(true).open(file_path)?;
         let buf_reader: BufReader<std::fs::File> = BufReader::new(file);
         let wallet: Wallet = serde_json::from_reader(buf_reader)?;

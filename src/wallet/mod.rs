@@ -1,2 +1,4 @@
-pub mod eth;
+pub mod evm;
+mod hd;
+mod mnemonic;
 mod utils;

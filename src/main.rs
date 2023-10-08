@@ -3,7 +3,7 @@ use std::env;
 
 use anyhow::Result;
 use secp256k1::SecretKey;
-use wallet::eth::{address_from_pubkey, establish_web3_connection, generate_keypair, Wallet};
+use wallet::evm::{address_from_pubkey, establish_web3_connection, generate_keypair, Wallet};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -23,8 +23,8 @@ async fn main() -> Result<()> {
     println!("crypto_wallet: {:?}", &crypto_wallet);
 
     let wallet_file_path = "crypto_wallet.json";
-    crypto_wallet.save_to_file(wallet_file_path)?;
-    let loaded_wallet = Wallet::from_file(wallet_file_path)?;
+    crypto_wallet.save_to_file(&wallet_file_path)?;
+    let loaded_wallet = Wallet::from_file(&wallet_file_path)?;
     println!("loaded_wallet: {:?}", loaded_wallet);
 
     let endpoint = env::var("TESTNET_WS")?;
