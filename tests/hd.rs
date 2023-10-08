@@ -2,7 +2,7 @@
 mod tests {
     use std::u64;
 
-    use cryptowallet::wallet::eth::{address_from_pubkey, generate_keypair, Wallet};
+    use cryptowallet::wallet::evm::{address_from_pubkey, generate_keypair, Wallet};
     use rand::RngCore;
     use secp256k1::rand::{Rng, SeedableRng};
     use secp256k1::{PublicKey, Secp256k1, SecretKey};
