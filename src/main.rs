@@ -60,26 +60,26 @@ impl WoletState {
         // println!("{}", private.display_secret().to_string());
         // println!("{}", public);
 
-        let address = address_from_pubkey(&public);
+        // let address = address_from_pubkey(&public);
 
         // println!("address: ");
         // println!("{:?}", address);
 
-        let crypto_wallet = Wallet::new(&private, &public);
+        let new_wallet = Wallet::new(&private, &public);
         // println!("crypto_wallet: {:?}", &crypto_wallet);
 
         // TODO remove unwrap or default, errors etc
-        crypto_wallet
+        new_wallet
             // TODO wallet save location added to settings
             .save_to_file(&WALLET_FILE_PATH)
             .unwrap_or_default();
-        self.wallet = Some(crypto_wallet);
+        self.wallet = Some(new_wallet);
     }
 
     fn load_wallet_from_file(&mut self) {
         // TODO remove unwrap or default
         let loaded_wallet = Wallet::from_file(&WALLET_FILE_PATH).unwrap();
-        println!("loaded_wallet: {:?}", loaded_wallet);
+        // println!("loaded_wallet: {:?}", loaded_wallet);
         self.wallet = Some(loaded_wallet);
     }
 
@@ -161,13 +161,14 @@ async fn main() {
     // infra setup
     dotenv::dotenv().ok();
 
+    // set up CLI
     let mut terminal = TerminalBridge::new().expect("Cannot create terminal bridge");
     let mut model = Wolet::default();
     let _ = terminal.enable_raw_mode();
     let _ = terminal.enter_alternate_screen();
     // Now we use the Model struct to keep track of some states
 
-    // let's loop until quit is true
+    // main ui loop
     while !model.quit {
         // Tick
         if let Ok(messages) = model.app.tick(PollStrategy::Once) {
@@ -178,7 +179,7 @@ async fn main() {
                 }
             }
         }
-        // Redraw
+        // You can flag redraw to be true for rerenderings based on state
         if model.redraw {
             model.view(&mut terminal);
             model.redraw = false;
@@ -203,7 +204,6 @@ impl Update<Msg> for Wolet {
             Msg::OptionSelected(val) => {
                 if val == 1 {
                     self.states.new_wallet();
-                    // check how to load a new menu
                     None
                 } else {
                     None
