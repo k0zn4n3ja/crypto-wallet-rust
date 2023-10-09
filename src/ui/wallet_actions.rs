@@ -1,25 +1,11 @@
-use std::env;
-
-use anyhow::Result;
-use secp256k1::SecretKey;
-use std::time::Duration;
-use tuirealm::{AttrValue, Attribute, StateValue};
-
-use tui_realm_stdlib::{List, Table};
+use super::data::Msg;
+use tui_realm_stdlib::List;
 use tuirealm::command::{Cmd, CmdResult, Direction, Position};
-use tuirealm::props::{
-    Alignment, BorderType, Borders, Color, TableBuilder, TextModifiers, TextSpan,
-};
-use tuirealm::terminal::TerminalBridge;
+use tuirealm::props::{Alignment, BorderType, Borders, Color, TableBuilder, TextSpan};
 use tuirealm::{
-    application::PollStrategy,
     event::{Key, KeyEvent},
-    Application, Component, Event, EventListenerCfg, MockComponent, NoUserEvent, Update,
+    Component, Event, MockComponent, NoUserEvent,
 };
-// tui
-use tuirealm::tui::layout::{Constraint, Direction as LayoutDirection, Layout};
-
-use crate::Msg;
 
 #[derive(MockComponent)]
 pub struct WalletActions {

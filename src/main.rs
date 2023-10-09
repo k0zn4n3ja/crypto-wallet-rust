@@ -4,37 +4,17 @@ mod wallet;
 use std::env;
 
 use anyhow::Result;
-use secp256k1::SecretKey;
 use std::time::Duration;
-use tuirealm::{AttrValue, Attribute, StateValue};
+use tuirealm::terminal::TerminalBridge;
+use tuirealm::{application::PollStrategy, Application, EventListenerCfg, NoUserEvent, Update};
+use ui::data::Msg;
 use ui::main_menu::MainMenu;
 use ui::wallet_actions::WalletActions;
 use wallet::evm::{address_from_pubkey, establish_web3_connection, generate_keypair, Wallet};
-
-use tui_realm_stdlib::{List, Table};
-use tuirealm::command::{Cmd, CmdResult, Direction, Position};
-use tuirealm::props::{
-    Alignment, BorderType, Borders, Color, TableBuilder, TextModifiers, TextSpan,
-};
-use tuirealm::terminal::TerminalBridge;
-use tuirealm::{
-    application::PollStrategy,
-    event::{Key, KeyEvent},
-    Application, Component, Event, EventListenerCfg, MockComponent, NoUserEvent, Update,
-};
 // tui
 use tuirealm::tui::layout::{Constraint, Direction as LayoutDirection, Layout};
 
 const WALLET_FILE_PATH: &str = "crypto_wallet.json";
-
-#[derive(Debug, PartialEq)]
-pub enum Msg {
-    AppClose,
-    MainMenuBlur,
-    WalletActionsBlur,
-    OptionSelected(usize),
-    None,
-}
 
 // Let's define the component ids for our application
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
@@ -156,6 +136,30 @@ impl Wolet {
     }
 }
 
+impl Update<Msg> for Wolet {
+    fn update(&mut self, msg: Option<Msg>) -> Option<Msg> {
+        self.redraw = true;
+        match msg.unwrap_or(Msg::None) {
+            Msg::AppClose => {
+                self.quit = true;
+                None
+            }
+            Msg::MainMenuBlur => None,
+            Msg::WalletActionsBlur => None,
+            Msg::OptionSelected(val) => {
+                if val == 1 {
+                    self.states.new_wallet();
+                    None
+                } else {
+                    None
+                }
+            }
+
+            Msg::None => None,
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() {
     // infra setup
@@ -189,28 +193,4 @@ async fn main() {
     let _ = terminal.leave_alternate_screen();
     let _ = terminal.disable_raw_mode();
     let _ = terminal.clear_screen();
-}
-
-impl Update<Msg> for Wolet {
-    fn update(&mut self, msg: Option<Msg>) -> Option<Msg> {
-        self.redraw = true;
-        match msg.unwrap_or(Msg::None) {
-            Msg::AppClose => {
-                self.quit = true;
-                None
-            }
-            Msg::MainMenuBlur => None,
-            Msg::WalletActionsBlur => None,
-            Msg::OptionSelected(val) => {
-                if val == 1 {
-                    self.states.new_wallet();
-                    None
-                } else {
-                    None
-                }
-            }
-
-            Msg::None => None,
-        }
-    }
 }
