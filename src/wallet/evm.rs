@@ -1,5 +1,5 @@
 use anyhow::{bail, Result};
-
+use bip32::Mnemonic;
 use hex::encode;
 use secp256k1::{
     rand::rngs::OsRng,
@@ -16,7 +16,7 @@ use web3::{
     Web3,
 };
 
-use super::hd::CoinType;
+use super::hd::{gen_mnemonic, CoinType};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Bip44Account {
@@ -47,23 +47,18 @@ pub struct Bip44Address {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Wallet {
-    pub secret_key: String,
-    pub public_key: String,
-    pub address: String,
-    pub address_checksummed: String,
+    pub mnemonic: [u8; 32],
     pub accounts: HashMap<CoinType, Bip44Account>,
 }
 
 impl Wallet {
-    pub fn new(secret_key: &SecretKey, public_key: &PublicKey) -> Self {
-        let addr: Address = address_from_pubkey(&public_key);
-        Wallet {
-            secret_key: secret_key.display_secret().to_string(),
-            public_key: public_key.to_string(),
-            address: format!("{:?}", addr),
-            address_checksummed: to_checksum_address(&addr),
+    pub fn new() -> Result<Self> {
+        let mnemonic = gen_mnemonic();
+        let new_wallet = Wallet {
+            mnemonic: *mnemonic.entropy(),
             accounts: HashMap::new(),
-        }
+        };
+        Ok(new_wallet)
     }
 
     pub fn save_to_file(&self, file_path: &str) -> Result<()> {
@@ -85,37 +80,20 @@ impl Wallet {
         Ok(wallet)
     }
 
-    pub fn get_secret_key(&self) -> Result<SecretKey> {
-        let secret_key = SecretKey::from_str(&self.secret_key)?;
-        Ok(secret_key)
-    }
-    pub fn get_public_key(&self) -> Result<PublicKey> {
-        let pub_key = PublicKey::from_str(&self.public_key)?;
-        Ok(pub_key)
-    }
+    // pub fn get_secret_key(&self) -> Result<SecretKey> {
+    //     let secret_key = SecretKey::from_str(&self.secret_key)?;
+    //     Ok(secret_key)
+    // }
+    // pub fn get_public_key(&self) -> Result<PublicKey> {
+    //     let pub_key = PublicKey::from_str(&self.public_key)?;
+    //     Ok(pub_key)
+    // }
 
-    pub async fn get_balance(&self, web3_connection: &Web3<WebSocket>) -> Result<U256> {
-        let wallet_address = Address::from_str(&self.address)?;
-        let balance = web3_connection.eth().balance(wallet_address, None).await?;
-        Ok(balance)
-    }
-}
-
-/// Generates a keypair using OS Rng.
-/// For all major platforms, OS Rng is a CSPRNG with physical entropy as seed.
-pub fn generate_keypair() -> (SecretKey, PublicKey) {
-    let secp = Secp256k1::new();
-    secp.generate_keypair(&mut OsRng)
-}
-
-pub fn address_from_pubkey(pub_key: &PublicKey) -> Address {
-    let public_key = pub_key.serialize_uncompressed();
-    // use a result for this with proper error handling
-    debug_assert_eq!(public_key[0], 0x04);
-    // get hash from public key
-    let hash = keccak256(&public_key[1..]);
-    // use last twenty bytes from the hash
-    Address::from_slice(&hash[12..])
+    // pub async fn get_balance(&self, web3_connection: &Web3<WebSocket>) -> Result<U256> {
+    //     let wallet_address = Address::from_str(&self.address)?;
+    //     let balance = web3_connection.eth().balance(wallet_address, None).await?;
+    //     Ok(balance)
+    // }
 }
 
 pub async fn establish_web3_connection(url: &str) -> Result<Web3<WebSocket>> {
@@ -160,4 +138,14 @@ pub fn to_checksum_address(address: &Address) -> String {
             .collect::<Vec<String>>()
             .join("")
     )
+}
+
+pub fn address_from_pubkey(pub_key: &PublicKey) -> Address {
+    let public_key = pub_key.serialize_uncompressed();
+    // use a result for this with proper error handling
+    debug_assert_eq!(public_key[0], 0x04);
+    // get hash from public key
+    let hash = keccak256(&public_key[1..]);
+    // use last twenty bytes from the hash
+    Address::from_slice(&hash[12..])
 }

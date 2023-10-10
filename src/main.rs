@@ -10,7 +10,10 @@ use tuirealm::{application::PollStrategy, Application, EventListenerCfg, NoUserE
 use ui::data::Msg;
 use ui::main_menu::MainMenu;
 use ui::wallet_actions::WalletActions;
-use wallet::evm::{address_from_pubkey, establish_web3_connection, generate_keypair, Wallet};
+use wallet::{
+    evm::{address_from_pubkey, establish_web3_connection, Wallet},
+    utils::generate_keypair_secp256k1,
+};
 // tui
 use tuirealm::tui::layout::{Constraint, Direction as LayoutDirection, Layout};
 
@@ -35,19 +38,8 @@ impl Default for WoletState {
 
 impl WoletState {
     fn new_wallet(&mut self) {
-        let (private, public) = generate_keypair();
-        // println!("private and public keys");
-        // println!("{}", private.display_secret().to_string());
-        // println!("{}", public);
-
-        // let address = address_from_pubkey(&public);
-
-        // println!("address: ");
-        // println!("{:?}", address);
-
-        let new_wallet = Wallet::new(&private, &public);
-        // println!("crypto_wallet: {:?}", &crypto_wallet);
-
+        // TODO remove unwrap
+        let new_wallet = Wallet::new().unwrap();
         // TODO remove unwrap or default, errors etc
         new_wallet
             // TODO wallet save location added to settings
@@ -59,11 +51,10 @@ impl WoletState {
     fn load_wallet_from_file(&mut self) {
         // TODO remove unwrap or default
         let loaded_wallet = Wallet::from_file(&WALLET_FILE_PATH).unwrap();
-        // println!("loaded_wallet: {:?}", loaded_wallet);
         self.wallet = Some(loaded_wallet);
     }
 
-    async fn test_wallet(&mut self) {
+    async fn test_connection(&mut self) {
         // TODO remove all unwraps
         let endpoint = env::var("TESTNET_WS").unwrap();
         let web3_con = establish_web3_connection(&endpoint).await.unwrap();
@@ -151,6 +142,7 @@ impl Update<Msg> for Wolet {
                     self.states.new_wallet();
                     None
                 } else {
+                    self.states.load_wallet_from_file();
                     None
                 }
             }
