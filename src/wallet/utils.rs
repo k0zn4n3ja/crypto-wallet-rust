@@ -15,11 +15,3 @@ pub fn eth_to_wei(eth_val: f64) -> U256 {
 
     U256::from(result)
 }
-
-/// Generates a keypair using OS Rng.
-/// For all major platforms, OS Rng is a CSPRNG with physical entropy as seed.
-/// Secp256k1 is used by Bitcoin and Ethereum coin types
-pub fn generate_keypair_secp256k1() -> (SecretKey, PublicKey) {
-    let secp = Secp256k1::new();
-    secp.generate_keypair(&mut OsRng)
-}

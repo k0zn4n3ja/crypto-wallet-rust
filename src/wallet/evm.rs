@@ -1,18 +1,18 @@
 use anyhow::{bail, Result};
-use bip32::Mnemonic;
+use bip32::{Language, Mnemonic};
 use hex::encode;
 use secp256k1::{
     rand::rngs::OsRng,
     Secp256k1, {PublicKey, SecretKey},
 };
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
+use std::{collections::hash_map::Entry, str::FromStr};
 use std::{collections::HashMap, io::BufWriter};
 use std::{fs::OpenOptions, io::BufReader};
 use tiny_keccak::keccak256;
 use web3::{
     transports::{self, WebSocket},
-    types::{Address, TransactionParameters, H256, U256},
+    types::{Address, ChangedType, TransactionParameters, H256, U256},
     Web3,
 };
 
@@ -20,12 +20,14 @@ use super::hd::{gen_mnemonic, CoinType};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Bip44Account {
-    pub next_index: u32,
-    pub changes: HashMap<u32, Bip44Change>,
+    pub index: u32,
+    // We include a string so that you can
+    pub name: String,
+    pub changes: HashMap<Bip44ChangeVal, Bip44Change>,
 }
 
-// 0 for receiving address, 1 for internal address. all will be recieivng for now.
-#[derive(Serialize, Deserialize, Debug)]
+/// 0 for receiving address, 1 for internal address. all will be recieivng for now.
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Hash)]
 pub enum Bip44ChangeVal {
     RECEIVING,
     INTERNAL,
@@ -46,9 +48,16 @@ pub struct Bip44Address {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct Accounts {
+    pub path: String,
+    pub next_index: u32,
+    pub accounts: HashMap<u32, Bip44Account>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Wallet {
     pub mnemonic: [u8; 32],
-    pub accounts: HashMap<CoinType, Bip44Account>,
+    pub coins: HashMap<CoinType, Accounts>,
 }
 
 impl Wallet {
@@ -56,7 +65,7 @@ impl Wallet {
         let mnemonic = gen_mnemonic();
         let new_wallet = Wallet {
             mnemonic: *mnemonic.entropy(),
-            accounts: HashMap::new(),
+            coins: HashMap::new(),
         };
         Ok(new_wallet)
     }
@@ -72,7 +81,7 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn from_file(file_path: &str) -> Result<Wallet> {
+    pub fn from_file(&self, file_path: &str) -> Result<Wallet> {
         // TODO password encryption
         let file = OpenOptions::new().read(true).open(file_path)?;
         let buf_reader: BufReader<std::fs::File> = BufReader::new(file);
@@ -80,20 +89,75 @@ impl Wallet {
         Ok(wallet)
     }
 
-    // pub fn get_secret_key(&self) -> Result<SecretKey> {
-    //     let secret_key = SecretKey::from_str(&self.secret_key)?;
-    //     Ok(secret_key)
-    // }
-    // pub fn get_public_key(&self) -> Result<PublicKey> {
-    //     let pub_key = PublicKey::from_str(&self.public_key)?;
-    //     Ok(pub_key)
-    // }
+    pub fn show_mnemonic(&self, file_path: &str) -> Result<String> {
+        let wallet: Wallet = self.from_file(file_path)?;
+        // English is currently the only supported language
+        let mnemnonic: Mnemonic = Mnemonic::from_entropy(wallet.mnemonic, Language::English);
+        Ok(mnemnonic.phrase().to_string())
+    }
 
-    // pub async fn get_balance(&self, web3_connection: &Web3<WebSocket>) -> Result<U256> {
-    //     let wallet_address = Address::from_str(&self.address)?;
-    //     let balance = web3_connection.eth().balance(wallet_address, None).await?;
-    //     Ok(balance)
-    // }
+    /// Creates a new account for a given `CoinType` and associates it with an account name.
+    ///
+    /// This function is used to create a new account for a specific `CoinType` and associate it
+    /// with a provided account name. If an account with the given `CoinType` already exists, the
+    /// new account will be added to the existing ones.
+    ///
+    /// Follows bip44 specification.
+    ///
+    ///
+    /// # Arguments
+    ///
+    /// - `coin`: A `CoinType` representing the type of cryptocurrency for the new account.
+    /// - `account_name`: A string containing the name for the new account.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(u32)`: The function returns `Ok` with an account index (a non-negative integer) if
+    ///   the operation is successful.
+    /// - `Err`: The function returns an error if there is a problem with creating the account.
+    ///
+    /// # Example
+    ///
+    /// ```
+    ///
+    /// let mut wallet = Wallet::new(); // Create an instance of your HD wallet
+    ///
+    /// let coin_type = CoinType::Bitcoin; // Define the coin type
+    /// let account_name = "Savings"; // Define the account name
+    ///
+    /// match wallet.new_account(coin_type, account_name) {
+    ///     Ok(account_index) => {
+    ///         println!("New account created with index: {}", account_index);
+    ///     }
+    ///     Err(error) => {
+    ///         eprintln!("Error creating a new account: {}", error);
+    ///     }
+    /// }
+    ///
+    /// TODO work out whether you want to have internal accounts
+    ///
+    /// ```
+    pub fn new_account(&mut self, coin: CoinType, account_name: &str) -> Result<u32> {
+        //
+        let accounts_entry = self.coins.entry(coin);
+
+        match accounts_entry {
+            Entry::Vacant(vacant) => {
+                let entry = Accounts {
+                    path: format!("m/44'/{}", coin),
+                    next_index: 0,
+                    accounts: HashMap::new(),
+                };
+                let accounts = vacant.insert(entry);
+
+                new_account(accounts, account_name)
+            }
+            Entry::Occupied(mut entry) => {
+                let accounts = entry.get_mut();
+                new_account(accounts, account_name)
+            }
+        }
+    }
 }
 
 pub async fn establish_web3_connection(url: &str) -> Result<Web3<WebSocket>> {
@@ -148,4 +212,32 @@ pub fn address_from_pubkey(pub_key: &PublicKey) -> Address {
     let hash = keccak256(&public_key[1..]);
     // use last twenty bytes from the hash
     Address::from_slice(&hash[12..])
+}
+
+fn new_account(accounts: &mut Accounts, account_name: &str) -> Result<u32> {
+    let index = accounts.next_index;
+
+    let mut changes = HashMap::new();
+
+    changes.insert(
+        Bip44ChangeVal::RECEIVING,
+        Bip44Change {
+            change: Bip44ChangeVal::RECEIVING,
+            next_address_index: 0,
+            addresses: HashMap::new(),
+        },
+    );
+
+    // create the new accounts
+    accounts.accounts.insert(
+        index,
+        Bip44Account {
+            index,
+            name: String::from(account_name),
+            changes,
+        },
+    );
+
+    accounts.next_index += 1;
+    Ok(index)
 }
