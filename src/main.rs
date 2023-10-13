@@ -10,11 +10,12 @@ use tuirealm::{application::PollStrategy, Application, EventListenerCfg, NoUserE
 use ui::data::Msg;
 use ui::main_menu::MainMenu;
 use ui::wallet_actions::WalletActions;
-use wallet::evm::{address_from_pubkey, establish_web3_connection, Wallet};
+use wallet::{
+    core::Wallet,
+    evm::{address_from_pubkey, establish_web3_connection},
+};
 // tui
 use tuirealm::tui::layout::{Constraint, Direction as LayoutDirection, Layout};
-
-const WALLET_FILE_PATH: &str = "crypto_wallet.json";
 
 // Let's define the component ids for our application
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
@@ -37,17 +38,12 @@ impl WoletState {
     fn new_wallet(&mut self) {
         // TODO remove unwrap
         let new_wallet = Wallet::new().unwrap();
-        // TODO remove unwrap or default, errors etc
-        new_wallet
-            // TODO wallet save location added to settings
-            .save_to_file(&WALLET_FILE_PATH)
-            .unwrap_or_default();
         self.wallet = Some(new_wallet);
     }
 
     fn load_wallet_from_file(&mut self) {
         // TODO remove unwrap or default
-        let loaded_wallet = Wallet::from_file(&WALLET_FILE_PATH).unwrap();
+        let loaded_wallet = Wallet::from_file().unwrap();
         self.wallet = Some(loaded_wallet);
     }
 

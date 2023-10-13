@@ -2,7 +2,15 @@
 
 Wolet is a BIP32, BIP39 and BIP44 compliant HD wallet. Currently wallet state is saved to file as JSON and encrypted with a password, later if I feel like it I will move to a more resilient system.
 
-The CLI implementation is subpar, this will be converted to a tauri application with a GUI.
+I will do a front end for it when I feel like it.
+
+## HD Wallet Tree Structure
+
+As this is a simple side project the eventual UI will only support the one-address-per-account structure. Example tree:
+
+![](/docs/assets/current_tree_structure.png)
+
+However the underlying rust library supports any HD wallet tree structure compliant to BIP44.
 
 ## Reference Specifications
 

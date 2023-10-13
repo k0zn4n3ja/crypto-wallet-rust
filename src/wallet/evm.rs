@@ -16,7 +16,7 @@ use web3::{
     Web3,
 };
 
-use super::hd::{gen_mnemonic, CoinType};
+use super::core::{gen_mnemonic, CoinType};
 
 pub async fn establish_web3_connection(url: &str) -> Result<Web3<WebSocket>> {
     let transport = web3::transports::WebSocket::new(url).await?;
@@ -62,12 +62,12 @@ pub fn to_checksum_address(address: &Address) -> String {
     )
 }
 
-pub fn address_from_pubkey(pub_key: &PublicKey) -> Address {
-    let public_key = pub_key.serialize_uncompressed();
+pub fn address_from_pubkey(pub_key: [u8; 65]) -> Address {
+    // let pub_key = pub_key.serialize_uncompressed();
     // use a result for this with proper error handling
-    debug_assert_eq!(public_key[0], 0x04);
+    debug_assert_eq!(pub_key[0], 0x04);
     // get hash from public key
-    let hash = keccak256(&public_key[1..]);
+    let hash = keccak256(&pub_key[1..]);
     // use last twenty bytes from the hash
     Address::from_slice(&hash[12..])
 }
