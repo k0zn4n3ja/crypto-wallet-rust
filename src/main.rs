@@ -10,10 +10,7 @@ use tuirealm::{application::PollStrategy, Application, EventListenerCfg, NoUserE
 use ui::data::Msg;
 use ui::main_menu::MainMenu;
 use ui::wallet_actions::WalletActions;
-use wallet::{
-    evm::{address_from_pubkey, establish_web3_connection, Wallet},
-    utils::generate_keypair_secp256k1,
-};
+use wallet::evm::{address_from_pubkey, establish_web3_connection, Wallet};
 // tui
 use tuirealm::tui::layout::{Constraint, Direction as LayoutDirection, Layout};
 
