@@ -1,6 +1,8 @@
 # 🗝️ Wolet
 
-Wolet is a BIP32, BIP39 and BIP44 compliant HD wallet. Currently wallet state is saved to file as JSON and encrypted with a password, later if I feel like it I will move to a more resilient system.
+Wolet is a BIP32, BIP39 and BIP44 compliant HD wallet. Currently wallet state is saved to file as JSON, later if I feel like it I will move to a more resilient system, most likely SQLite or a file vault. Wallet built as a learning experience, not audited, checked, etc. 
+
+Feel free to run with it if you feel to. 
 
 > This wallet currently doesn't send transactions. I originally wanted to better understand the cryptography in the HD wallet spec. That achieved, my interest in this has atrophied. I may come back to it at a later date. 
 
