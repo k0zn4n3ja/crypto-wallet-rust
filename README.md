@@ -14,14 +14,18 @@ However the underlying rust library supports any HD wallet tree structure compli
 
 ## Reference Specifications
 
-[The original bip32 spec](https://github.com/satoshilabs/slips/blob/master/slip-0032.md)
+[The original bip32 spec](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)
 
 [The original bip39 spec](https://github.com/satoshilabs/slips/blob/master/slip-0039.md)
 
 [The original bip44 spec](https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
+
+[SEC1 Cryptography](http://www.secg.org/sec1-v2.pdf)
 
 ## Some Helpful Documentation for the Learners Out There
 
 [Trezor docs on BIP44](https://trezor.io/learn/a/what-is-bip44)
 
 [Article on hardened key derivation](https://medium.com/@blainemalone01/hd-wallets-why-hardened-derivation-matters-89efcdc71671)
+
+[Article on compressed vs uncompressed ethereum keys](https://medium.com/asecuritysite-when-bob-met-alice/02-03-or-04-so-what-are-compressed-and-uncompressed-public-keys-6abcb57efeb6)

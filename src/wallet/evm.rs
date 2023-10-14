@@ -1,22 +1,12 @@
-use anyhow::{bail, Result};
-use bip32::{Language, Mnemonic};
+use anyhow::{Error, Result};
 use hex::encode;
-use secp256k1::{
-    rand::rngs::OsRng,
-    Secp256k1, {PublicKey, SecretKey},
-};
-use serde::{Deserialize, Serialize};
-use std::{collections::hash_map::Entry, str::FromStr};
-use std::{collections::HashMap, io::BufWriter};
-use std::{fs::OpenOptions, io::BufReader};
+use secp256k1::{PublicKey, Secp256k1, SecretKey};
 use tiny_keccak::keccak256;
 use web3::{
     transports::{self, WebSocket},
-    types::{Address, ChangedType, TransactionParameters, H256, U256},
+    types::{Address, TransactionParameters, H256},
     Web3,
 };
-
-use super::core::{gen_mnemonic, CoinType};
 
 pub async fn establish_web3_connection(url: &str) -> Result<Web3<WebSocket>> {
     let transport = web3::transports::WebSocket::new(url).await?;
@@ -60,6 +50,13 @@ pub fn to_checksum_address(address: &Address) -> String {
             .collect::<Vec<String>>()
             .join("")
     )
+}
+
+pub fn uncompress_pub_key(compressed_pubkey: [u8; 33]) -> [u8; 65] {
+    let secp = Secp256k1::new();
+    let compressed_pub_key =
+        PublicKey::from_slice(&compressed_pubkey).expect("Invalid compressed public key");
+    compressed_pub_key.serialize_uncompressed()
 }
 
 pub fn address_from_pubkey(pub_key: [u8; 65]) -> Address {
