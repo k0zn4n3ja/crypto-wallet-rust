@@ -5,7 +5,6 @@ use bip32::{
     secp256k1::ecdsa::{SigningKey, VerifyingKey},
     ExtendedPrivateKey, ExtendedPublicKey, Language, Mnemonic, PublicKey, Seed, XPrv,
 };
-use hex::ToHex;
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -16,13 +15,14 @@ use std::{
     hash::Hash,
     io::{BufReader, BufWriter},
 };
+use web3::types::{CallRequest, TransactionParameters};
 
 // ERR MESSAGES
 const INVALID_BIP44_PATH_FORMT: &str = "invalid bip44 path format";
 const UNHARDENED_KEY: &str = "must harden child key";
 const INVALID_WALLET_PATH: &str = "invalid wallet path for current state";
 
-// TODO change this path
+// TODO change this path or make it an SQLite database with the whole thing encrypted
 const WALLET_FILE_PATH: &str = "crypto_wallet.json";
 
 impl fmt::Display for CoinType {
@@ -35,6 +35,7 @@ impl fmt::Display for CoinType {
     }
 }
 
+#[non_exhaustive]
 /// BIP-44 compliant enum for major coin types for the wallet
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub enum CoinType {
@@ -100,14 +101,16 @@ pub struct Accounts {
 pub struct Wallet {
     pub mnemonic: [u8; 32],
     pub coins: HashMap<CoinType, Accounts>,
+    pub rpc_endpoints: HashMap<CoinType, String>,
 }
 
 impl Wallet {
-    pub fn new() -> Result<Self> {
+    pub fn new(rpc_endpoints: HashMap<CoinType, String>) -> Result<Self> {
         let mnemonic = gen_mnemonic();
         let new_wallet = Wallet {
             mnemonic: *mnemonic.entropy(),
             coins: HashMap::new(),
+            rpc_endpoints,
         };
         new_wallet.save_to_file()?;
         Ok(new_wallet)
@@ -130,6 +133,11 @@ impl Wallet {
         let buf_reader: BufReader<std::fs::File> = BufReader::new(file);
         let wallet: Wallet = serde_json::from_reader(buf_reader)?;
         Ok(wallet)
+    }
+
+    pub fn update_rpc_endpoint(coin_type: CoinType, endpoint: String) -> Result<()> {
+        println!("unimplmented....you get it.");
+        Ok(())
     }
 
     pub fn show_mnemonic(&self) -> Result<String> {
@@ -183,7 +191,6 @@ impl Wallet {
     pub fn new_account(&mut self, coin: CoinType, account_name: &str) -> Result<u32> {
         //
         let accounts_entry = self.coins.entry(coin);
-
         match accounts_entry {
             Entry::Vacant(vacant) => {
                 let entry = Accounts {
@@ -231,7 +238,6 @@ impl Wallet {
                                 // unlike ethereum, bitcoin addresses are checksummed by default
                                 address_checksummed: address.to_string(),
                             };
-
                             change.next_address_index += 1;
                             change.addresses.insert(index, address_data);
                         }
@@ -252,7 +258,6 @@ impl Wallet {
                                 // unlike ethereum, bitcoin addresses are checksummed by default
                                 address_checksummed: address.to_string(),
                             };
-
                             change.next_address_index += 1;
                             change.addresses.insert(index, address_data);
                         }
@@ -260,24 +265,20 @@ impl Wallet {
                             let address: web3::types::H160 =
                                 address_from_pubkey(uncompressed_pub_key);
                             let address_checksummed: String = to_checksum_address(&address);
-
                             let address_data = Bip44Address {
                                 path: path.to_string(),
                                 pub_key: key_bytes.to_vec(),
                                 address: address.to_string(),
                                 address_checksummed,
                             };
-
                             change.next_address_index += 1;
                             change.addresses.insert(index, address_data);
                         }
                     }
-
                     return Ok(());
                 }
             }
         }
-
         Err(Error::msg(""))
     }
 }

@@ -1,6 +1,7 @@
 mod ui;
 mod wallet;
 
+use std::collections::HashMap;
 use std::env;
 
 use anyhow::Result;
@@ -10,6 +11,7 @@ use tuirealm::{application::PollStrategy, Application, EventListenerCfg, NoUserE
 use ui::data::Msg;
 use ui::main_menu::MainMenu;
 use ui::wallet_actions::WalletActions;
+use wallet::core::CoinType;
 use wallet::{
     core::Wallet,
     evm::{address_from_pubkey, establish_web3_connection},
@@ -35,9 +37,9 @@ impl Default for WoletState {
 }
 
 impl WoletState {
-    fn new_wallet(&mut self) {
+    fn new_wallet(&mut self, rpc_endpoints: HashMap<CoinType, String>) {
         // TODO remove unwrap
-        let new_wallet = Wallet::new().unwrap();
+        let new_wallet = Wallet::new(rpc_endpoints).unwrap();
         self.wallet = Some(new_wallet);
     }
 
@@ -132,7 +134,7 @@ impl Update<Msg> for Wolet {
             Msg::WalletActionsBlur => None,
             Msg::OptionSelected(val) => {
                 if val == 1 {
-                    self.states.new_wallet();
+                    self.states.new_wallet(HashMap::new());
                     None
                 } else {
                     self.states.load_wallet_from_file();
