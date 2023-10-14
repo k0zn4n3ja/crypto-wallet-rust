@@ -1,4 +1,4 @@
+pub mod core;
 pub mod evm;
-mod hd;
-mod mnemonic;
-mod utils;
+pub mod utils;
+pub mod wallet_bitcoin;
